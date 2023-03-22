@@ -102,15 +102,50 @@ impl State {
   }
 
   fn input(&mut self, event: &WindowEvent) -> bool {
-    todo!()
+    // no event to capture yet
+    false
   }
 
   fn update(&mut self) {
-    todo!()
+    // todo!()
   }
 
   fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
-    todo!()
+    // let output = self.surface.get_current_texture()?;
+    // let view = output
+    //   .texture
+    //   .create_view(&wgpu::TextureViewDescriptor::default());
+
+    // let mut encoder = self
+    //   .device
+    //   .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+    //     label: Some("Render Encoder"),
+    //   });
+
+    // {
+    //   let _render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+    //     label: Some("Render Pass"),
+    //     color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+    //       view: &view,
+    //       resolve_target: None,
+    //       ops: wgpu::Operations {
+    //         load: wgpu::LoadOp::Clear(wgpu::Color {
+    //           r: 0.1,
+    //           g: 0.2,
+    //           b: 0.3,
+    //           a: 1.0,
+    //         }),
+    //         store: true,
+    //       },
+    //     })],
+    //     depth_stencil_attachment: None,
+    //   });
+    // }
+
+    // self.queue.submit(std::iter::once(encoder.finish()));
+    // output.present();
+
+    // Ok(())
   }
 }
 
@@ -141,13 +176,13 @@ pub async fn run() {
                 },
               ..
             } => *control_flow = ControlFlow::Exit,
-            WindowEvent::Resized(physical_size) => {
-              state.resize(*physical_size);
-            }
-            WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-              // new_inner_size is &&mut so w have to dereference it twice
-              state.resize(**new_inner_size);
-            }
+            // WindowEvent::Resized(physical_size) => {
+            //   state.resize(*physical_size);
+            // }
+            // WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
+            //   // new_inner_size is &&mut so w have to dereference it twice
+            //   state.resize(**new_inner_size);
+            // }
             _ => {}
           }
         }
