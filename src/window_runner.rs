@@ -1,8 +1,11 @@
-use winit::window::Window;
-
+use log::debug;
+use log::error;
+use log::info;
+use log::warn;
 use winit::{
   event::*,
   event_loop::{ControlFlow, EventLoop},
+  window::Window,
   window::WindowBuilder,
 };
 
@@ -14,6 +17,7 @@ struct State {
   size: winit::dpi::PhysicalSize<u32>,
   window: Window,
   color: wgpu::Color,
+  click: bool,
 }
 
 impl State {
@@ -85,6 +89,7 @@ impl State {
     surface.configure(&device, &config);
 
     let color = wgpu::Color::BLUE;
+    let click = false;
 
     Self {
       window,
@@ -94,6 +99,7 @@ impl State {
       config,
       size,
       color,
+      click,
     }
   }
 
@@ -115,10 +121,44 @@ impl State {
     // false
 
     match event {
-      WindowEvent::CursorMoved { position, .. } => {
+      WindowEvent::CursorEntered { .. } => {
         self.color = wgpu::Color::GREEN;
         true
       }
+
+      WindowEvent::CursorLeft { .. } => {
+        self.click = false;
+        self.color = wgpu::Color::BLACK;
+        true
+      }
+
+      WindowEvent::MouseInput { button, .. } => {
+        if MouseButton::Left.eq(button) {
+          // self.color = wgpu::Color::RED;
+          self.click = true;
+        } else {
+          self.click = false;
+        }
+
+        false
+      }
+
+      WindowEvent::CursorMoved { position, .. } => {
+        error!("{:?}", self.click);
+        if self.click {
+          self.color = wgpu::Color {
+            r: position.x as f64 / self.size.width as f64,
+            g: position.y as f64 / self.size.height as f64,
+            b: 1.0,
+            a: 1.0,
+          };
+          self.click = false;
+          true
+        } else {
+          false
+        }
+      }
+
       _ => false,
     }
   }
@@ -201,6 +241,7 @@ pub async fn run() {
         }
       }
       Event::RedrawRequested(window_id) if window_id == state.window().id() => {
+        log::info!("started ! ");
         state.update();
         match state.render() {
           Ok(_) => {}
