@@ -10,6 +10,7 @@ pub struct State {
   window: Window,
   color: wgpu::Color,
   click: bool,
+  render_pipeline: wgpu::RenderPipeline,
 }
 
 impl State {
@@ -83,6 +84,59 @@ impl State {
     let color = wgpu::Color::BLUE;
     let click = false;
 
+    // +++++++++++
+    // SHADER Pipeline
+    // +++++++++++
+    let shader = device.create_shader_module(wgpu::include_wgsl!("shader.wgsl"));
+    let render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+      label: Some("Render Pipeline Layout"),
+      bind_group_layouts: &[],
+      push_constant_ranges: &[],
+    });
+
+    let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+      label: Some("Render Pipeline"),
+      layout: Some(&render_pipeline_layout),
+      vertex: wgpu::VertexState {
+        module: &shader,
+        entry_point: "vs_main", //  shader fn name
+        buffers: &[], //  We're specifying the vertices in the vertex shader itself, so we'll leave this empty.
+      },
+      // fragment is optional
+      fragment: Some(wgpu::FragmentState {
+        module: &shader,
+        entry_point: "fs_main", //in the shader file
+        targets: &[Some(wgpu::ColorTargetState {
+          format: config.format,
+          blend: Some(wgpu::BlendState::REPLACE),
+          write_mask: wgpu::ColorWrites::ALL,
+        })],
+      }),
+
+      primitive: wgpu::PrimitiveState {
+        topology: wgpu::PrimitiveTopology::TriangleList, // every three vertices will correspond to one triangle
+        strip_index_format: None,
+        front_face: wgpu::FrontFace::Ccw, // given triangle is facing forward or not
+        cull_mode: Some(wgpu::Face::Back), // Triangles that are not considered facing forward are culled (not included in the render
+
+        // Setting this to anything other than Fill requires Features::NON_FILL_POLYGON_MODE
+        polygon_mode: wgpu::PolygonMode::Fill,
+        // Requires Features::DEPTH_CLIP_CONTROL
+        unclipped_depth: false,
+        // Requires Features::CONSERVATIVE_RASTERIZATION
+        conservative: false,
+      },
+
+      depth_stencil: None,
+      // Multisampling is ADVANCED topic
+      multisample: wgpu::MultisampleState {
+        count: 1,
+        mask: !0, // specifies which samples should be active. In this case, we are using all of them..
+        alpha_to_coverage_enabled: false, // anti-aliasing
+      },
+      multiview: None, // how many array layers the render attachments can have
+    });
+
     Self {
       window,
       surface,
@@ -92,6 +146,7 @@ impl State {
       size,
       color,
       click,
+      render_pipeline,
     }
   }
 
@@ -173,9 +228,10 @@ impl State {
 
     // the {} block borrows encoder mutably aka &mut self
     {
-      let _render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+      let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
         label: Some("Render Pass"),
         color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+          // This is what @location(0) in the fragment shader targets
           view: &view,
           resolve_target: None,
           ops: wgpu::Operations {
@@ -185,6 +241,10 @@ impl State {
         })],
         depth_stencil_attachment: None,
       });
+      // render_pipeline
+      render_pass.set_pipeline(&self.render_pipeline);
+      // draw something with 3 vertices, and 1 instance. This is where @builtin(vertex_index) comes from.
+      render_pass.draw(0..3, 0..1);
     }
 
     self.queue.submit(std::iter::once(encoder.finish()));
