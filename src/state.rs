@@ -11,6 +11,7 @@ pub struct State {
   color: wgpu::Color,
   click: bool,
   render_pipeline: wgpu::RenderPipeline,
+  shader_color: String,
 }
 
 impl State {
@@ -94,18 +95,20 @@ impl State {
       push_constant_ranges: &[],
     });
 
+    let shader_color = "main".into();
+
     let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
       label: Some("Render Pipeline"),
       layout: Some(&render_pipeline_layout),
       vertex: wgpu::VertexState {
         module: &shader,
-        entry_point: "vs_main", //  shader fn name
+        entry_point: &format!("vs_{}", shader_color), //  shader fn name
         buffers: &[], //  We're specifying the vertices in the vertex shader itself, so we'll leave this empty.
       },
       // fragment is optional
       fragment: Some(wgpu::FragmentState {
         module: &shader,
-        entry_point: "fs_main", //in the shader file
+        entry_point: &format!("fs_{}", shader_color), //in the shader file
         targets: &[Some(wgpu::ColorTargetState {
           format: config.format,
           blend: Some(wgpu::BlendState::REPLACE),
@@ -147,6 +150,7 @@ impl State {
       color,
       click,
       render_pipeline,
+      shader_color,
     }
   }
 
@@ -181,7 +185,6 @@ impl State {
 
       WindowEvent::MouseInput { button, .. } => {
         if MouseButton::Left.eq(button) {
-          // self.color = wgpu::Color::RED;
           self.click = true;
         } else {
           self.click = false;
